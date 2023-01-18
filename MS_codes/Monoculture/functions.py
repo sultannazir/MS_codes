@@ -1,14 +1,11 @@
 import numpy as np
 from PIL import Image
-import matplotlib.pyplot as plt
 from math import *
 import time
 import copy
-import random
-from matplotlib import animation
 
 def resolve_down(im, factor):
-    # averages value over a square region of pixels of size factor x factor
+    """averages value over a square region of pixels of size factor x factor"""
 
     # get pixel size of image
     Lx, Ly = im.size
@@ -118,6 +115,7 @@ def model_update(C, S, Parameters, res, dt):
     return C, S
 
 def check_bounds(Parameters, l_Parameters, u_Parameters):
+    """Return 1 if Parameters are outside specified boundaries and 0 if within boundaries"""
     length = len(Parameters)
     check = 0
     ind = 0
@@ -149,7 +147,8 @@ def get_error(Phase, FC, Parameters, l_Parameters, u_Parameters, input):
         res = dt / dx ** 2
 
         # Initialize
-        C = copy.deepcopy(FC[0])
+        k = 10**Parameters[0]
+        C = copy.deepcopy(FC[0])*k
         C[C < 0] = 0
         S = np.ones(C.shape)
 
