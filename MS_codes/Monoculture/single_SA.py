@@ -1,5 +1,5 @@
 import numpy as np
-import random
+import csv
 import functions as fn
 
 """ INPUT """
@@ -9,56 +9,51 @@ time_i = 0  # initial time frame
 time_f = 23  # final time frame
 nump = 50  # number of pixels to combine when resizing
 umpp = 0.91  # um per pixel
-thresh_ph = 0  # background subtraction value for phase channel images
-thresh_fl = 1  # background subtraction value for fluorescence channel images
+thresh = 0.1
 dthr = 1  # time interval between frames in hr
+sd_min = 21.7 # minimum value of standard deviation in density at every point in space and time
 
-input = [path, fc, time_i, time_f, nump, umpp, thresh_ph, thresh_fl, dthr]
+input = [path, fc, time_i, time_f, nump, umpp, thresh, dthr, sd_min]
 
 """ STARTING PARAMETER VALUES, SMALLEST STEP SIZE IN PARAMETER SPACE AND BOUNDS"""
+k = 1       # conversion factor from Fluorescence intensity to Phase intensity at t=0
+l_k, u_k = 0, 100
+
 mu = 0.45/3600        # max growth rate of strain 1 (in 1/sec)
-step_mu = 0.1 / 3600
 l_mu, u_mu = 0, 2.50 / 3600
 
 Rhf = 150              # cell density parameter to limit growth
-step_Rhf = 10
 l_Rhf, u_Rhf = 0, 1e10
 
 Qhf = 150              # cell density parameter determining dependence of migration on local density
-step_Qhf = 10
 l_Qhf, u_Qhf = 0, 1e10
 
 Phf = 150              # cell density parameter determining dependence of migration on neighboring density
-step_Phf = 10
 l_Phf, u_Phf = 0, 1e10
 
 Y = 160               # biomass yield (in pixel intensity per unit S0)
-step_Y = 10
 l_Y, u_Y = 0, 1e10
 
-log10Ks = -2          # rate of nutrient consumption by Monod kinetics (in unit log10S0)
-step_log10Ks = 1
-l_log10Ks, u_log10Ks = -100, 0
+Ks = 0.001          # rate of nutrient consumption by Monod kinetics (in unit log10S0)
+l_Ks, u_Ks = 0, 1
 
 DC = 1200             # spreading coefficient of cells (in um^2)
-step_DC = 100
 l_DC, u_DC = 0, 1e10
 
 DS = 500              # diffusion coefficient of glucose (in um^2/sec)
-step_DS = 10
 l_DS, u_DS = 0, 720
 
-Parameters = [mu, Rhf, Qhf, Phf, Y, log10Ks, DC, DS]
-step_Parameters = [step_mu, step_Rhf, step_Qhf, step_Phf, step_Y, step_log10Ks, step_DC, step_DS]
-l_Parameters = [l_mu, l_Rhf, l_Qhf, l_Phf, l_Y, l_log10Ks, l_DC, l_DS]
-u_Parameters = [u_mu, u_Rhf, u_Qhf, u_Phf, u_Y, u_log10Ks, u_DC, u_DS]
+l_Parameters = [l_k, l_mu, l_Rhf, l_Qhf, l_Phf, l_Y, l_Ks, l_DC, l_DS]
+u_Parameters = [u_k, u_mu, u_Rhf, u_Qhf, u_Phf, u_Y, u_Ks, u_DC, u_DS]
+
+
 
 """ ANNEALING PARAMETERS """
-an_iters = 1000
-maxTemp = 1e-6  # 1e6
+an_iters = 1500
+maxTemp = 1e5
 alpha = 0.9
 beta = 0.95
-max_step = 10  # 10
+max_step = 9
 
 sa_input = [an_iters, maxTemp, alpha, beta, max_step]
 """ DEFINE ANNEALING """
@@ -67,10 +62,9 @@ sa_input = [an_iters, maxTemp, alpha, beta, max_step]
 def simulated_annealing():
     an_iters, maxTemp, alpha, beta, max_step = tuple(sa_input)
 
+    Parameters = np.array([k, mu, Rhf, Qhf, Phf, Y, Ks, DC, DS])
     """ READ DATA """
     Phase, FC = fn.read_data_as_array(input)
-
-    Parameters = np.array([mu, Rhf, Qhf, Phf, Y, log10Ks, DC, DS])
     errors = []
     Temps = []
     Parameters_dat = []
@@ -82,10 +76,10 @@ def simulated_annealing():
     while iter < an_iters:
 
         Temp = maxTemp * alpha ** iter
+        step = 1 + max_step * beta ** iter
 
-        new_Parameters = Parameters + \
-                         np.random.uniform(-1, 1, len(Parameters)) * np.array(step_Parameters) * (
-                                 1 + max_step * beta ** iter)
+        """ make a random move in the Parameter space along log scaled axes """
+        new_Parameters = Parameters * 10 ** (np.random.uniform(-0.1, 0.1, len(Parameters)) * step)
         #print(new_Parameters)
 
         """ Use below lines to avoid recomputing error for revisited parameter vectors """
@@ -94,7 +88,6 @@ def simulated_annealing():
         # else:
         #    new_error = fn.get_error(Phase, FC, new_Parameters, l_Parameters, u_Parameters, input)
         new_error = fn.get_error(Phase, FC, new_Parameters, l_Parameters, u_Parameters, input)
-
         Derror = new_error - current_error
 
         if Derror <= 0:
@@ -102,17 +95,8 @@ def simulated_annealing():
             Parameters = new_Parameters
             current_error = new_error
             #print('accepted', iter)
-        else:
-            """ Accept uphill moves with a probability"""
-            metropolis = 2.7183 ** (-Derror / Temp)
-            rand = random.uniform(0, 1)
-            if rand < metropolis:
-                Parameters = new_Parameters
-                current_error = new_error
-                #print('accepted', iter)
-            #else:
-                #print('declined', iter)
 
+        print(current_error)
         errors.append(current_error)
         Temps.append(Temp)
         Parameters_dat.append(Parameters.tolist())
@@ -121,8 +105,9 @@ def simulated_annealing():
 
     print("Error: ", current_error, ", Parameters: ", Parameters)
     data = np.column_stack((Temps, errors, Parameters_dat))
-    with open('file.txt', 'a') as file:
-        file.write(f"{data[-1]} \n")
+    with open('single_SA_test.txt', 'a') as file:
+        writer = csv.writer(file)
+        writer.writerow(data[-1])
 
     return errors, Temps, Parameters_dat
 
