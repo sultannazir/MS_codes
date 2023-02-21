@@ -50,10 +50,10 @@ u_Parameters = [u_k, u_mu, u_Rhf, u_Qhf, u_Phf, u_Y, u_Ks, u_DC, u_DS]
 
 """ ANNEALING PARAMETERS """
 an_iters = 1500
-maxTemp = 1e5
+maxTemp = 1
 alpha = 0.9
 beta = 0.95
-max_step = 9
+max_step = 0
 
 sa_input = [an_iters, maxTemp, alpha, beta, max_step]
 """ DEFINE ANNEALING """
@@ -62,7 +62,10 @@ sa_input = [an_iters, maxTemp, alpha, beta, max_step]
 def simulated_annealing():
     an_iters, maxTemp, alpha, beta, max_step = tuple(sa_input)
 
-    Parameters = np.array([k, mu, Rhf, Qhf, Phf, Y, Ks, DC, DS])
+    #Parameters = np.array([k, mu, Rhf, Qhf, Phf, Y, Ks, DC, DS])
+
+    Parameters = np.array([2.374178, 0.000058, 134.240283, 27.915667, 17.33258, 41.246207, 0.000176, 2917.989396, 131.877123])
+
     """ READ DATA """
     Phase, FC = fn.read_data_as_array(input)
     errors = []
@@ -105,7 +108,7 @@ def simulated_annealing():
 
     print("Error: ", current_error, ", Parameters: ", Parameters)
     data = np.column_stack((Temps, errors, Parameters_dat))
-    with open('single_SA_test.txt', 'a') as file:
+    with open('single_SA_19feb_local.txt', 'a') as file:
         writer = csv.writer(file)
         writer.writerow(data[-1])
 

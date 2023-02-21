@@ -33,7 +33,7 @@ sa_input = [an_iters, max_wait, maxTemp, alpha]
 def directed_profile(idx, dirn):
     #sadat = np.loadtxt('profile_par{}.csv'.format(idx), delimiter=',')
     #Parameters = np.delete(sadat, 0, 1)
-    Parameters_min = np.array([2.990181,0.000045,267.489776,50.643431,34.425563,51.236493,0.002164,3967.201184,301.910207])
+    Parameters_min = np.array([2.374178, 0.000058, 134.240283, 27.915667, 17.33258, 41.246207, 0.000176, 2917.989396, 131.877123])
 
     an_iters, max_wait, maxTemp, alpha = tuple(sa_input)
 
