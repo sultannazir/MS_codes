@@ -6,7 +6,8 @@ import copy
 from joblib import Parallel, delayed
 import csv
 
-idx = int(os.getenv("SLURM_ARRAY_TASK_ID")) - 1
+#idx = int(os.getenv("SLURM_ARRAY_TASK_ID")) - 1
+idx = 2
 
 """ INPUT """
 path = "Data/nov3_pad3_YFP/monoculture_nov3_pad3_22hr-02_s2t"  # file name until timestamp
@@ -23,7 +24,7 @@ input = [path, fc, time_i, time_f, nump, umpp, thresh, dthr, sd_min]
 
 """ ANNEALING PARAMETERS """
 an_iters = 1500
-max_wait = 300
+max_wait = 500
 maxTemp = 1
 alpha = 1
 
@@ -33,7 +34,8 @@ sa_input = [an_iters, max_wait, maxTemp, alpha]
 def directed_profile(idx, dirn):
     #sadat = np.loadtxt('profile_par{}.csv'.format(idx), delimiter=',')
     #Parameters = np.delete(sadat, 0, 1)
-    Parameters_min = np.array([2.374178, 0.000058, 134.240283, 27.915667, 17.33258, 41.246207, 0.000176, 2917.989396, 131.877123])
+    #Parameters_min = np.array([2.374178, 0.000058, 134.240283, 27.915667, 17.33258, 41.246207, 0.000176, 2917.989396, 131.877123])
+    Parameters_min = np.array([2.619754954, 4.85E-05, 262.4564727, 44.06672389, 20.36124622, 40.51741602, 0.000252247, 4975.306468, 146.3523228])
 
     an_iters, max_wait, maxTemp, alpha = tuple(sa_input)
 
@@ -99,7 +101,7 @@ def directed_profile(idx, dirn):
             writer.writerow(data[-1])
 
 
-Parallel(n_jobs=2, verbose=9)(delayed(directed_profile)(idx, dirn) for dirn in np.array([-1,1]))
+Parallel(n_jobs=1, verbose=9)(delayed(directed_profile)(idx, dirn) for dirn in np.array([1]))
 
 
 
